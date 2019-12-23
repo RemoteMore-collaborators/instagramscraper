@@ -1,7 +1,9 @@
 import time
 import csv
 import re
+import gspread
 
+from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
@@ -9,14 +11,19 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import NoSuchElementException
 from bs4 import BeautifulSoup
+from oauth2client.service_account import ServiceAccountCredentials
+from utils import custom_logger, paste_csv_to_wks
 
-profile = webdriver.FirefoxProfile()
-profile.set_preference('intl.accept_languages', 'en-US, en, ja')
-profile.update_preferences()
+chrome_options = Options()
+chrome_options.add_argument("--headless")
+chrome_options.add_argument('--no-sandbox')
+chrome_options.add_argument('--disable-dev-shm-usage')
 
-driver = webdriver.Firefox(firefox_profile=profile)
+driver = webdriver.Chrome(executable_path='/usr/bin/chromedriver', options=chrome_options)
+
 driver.get("https://www.instagram.com/candycrushsaga/")
 
 pause_time = 3
@@ -39,14 +46,17 @@ time.sleep(pause_time)
 elements = driver.find_elements_by_xpath("//div[@class='v1Nh3 kIKUG  _bz0w']")
 elements[0].click()
 
-fp = open("./csv/insta.csv", "w")
+csv_path = "./csv/insta_" + str(datetime.now()) + ".csv"
+fp = open(csv_path, "w")
 wr = csv.writer(fp, dialect='excel')
 wr.writerow(['from_user', 'text', 'time', 'likes', 'hashtag'])
 
+logger = custom_logger("./log/insta_" + str(datetime.now()))
+
 while True:
     time.sleep(pause_time)
-    next_btn = driver.find_element_by_xpath("//a[@class='HBoOv coreSpriteRightPaginationArrow']")
-    if next_btn:
+    try:
+        next_btn = driver.find_element_by_xpath("//a[@class='HBoOv coreSpriteRightPaginationArrow']")
         time.sleep(pause_time)
         comment_blocks = driver.find_elements_by_xpath("//ul[@class='Mr508']")
 
@@ -87,7 +97,24 @@ while True:
 
         time.sleep(pause_time)
         next_btn.click()
-    else:
+    except NoSuchElementException:
         fp.close()
+
+        content = open(csv_path, 'r', encoding='utf-8').read()
+
+        scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+        credentials = ServiceAccountCredentials.from_json_keyfile_name('./instagramscraper.json', scope)
+
+        gc = gspread.authorize(credentials)
+        wks = gc.open("Instagram scraping")
+        paste_csv_to_wks(csv_path, wks, 'A2')
+
+        sleep_period = 3600
+
+        logger.info("Script sleeping for an hour")
+        time.sleep(sleep_period)
+        logger.info("Sleep period ended")
+
+        print("all success!!!!!!!!!!!!!!")
         driver.quit()
         break
