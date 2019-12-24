@@ -22,5 +22,5 @@ scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/au
 credentials = ServiceAccountCredentials.from_json_keyfile_name('./instagramscraper.json', scope)
 
 gc = gspread.authorize(credentials)
-wks = gc.open("Instagram scraping")
+wks = gc.open("Scraping task instagram")
 paste_csv_to_wks('./csv/insta_2.csv', wks, 'A2')

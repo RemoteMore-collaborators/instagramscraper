@@ -106,14 +106,14 @@ while True:
         credentials = ServiceAccountCredentials.from_json_keyfile_name('./instagramscraper.json', scope)
 
         gc = gspread.authorize(credentials)
-        wks = gc.open("Instagram scraping")
+        wks = gc.open("Scraping task instagram")
         paste_csv_to_wks(csv_path, wks, 'A2')
 
-        sleep_period = 3600
-
-        logger.info("Script sleeping for an hour")
-        time.sleep(sleep_period)
-        logger.info("Sleep period ended")
+        # sleep_period = 3600
+        #
+        # logger.info("Script sleeping for an hour")
+        # time.sleep(sleep_period)
+        # logger.info("Sleep period ended")
 
         print("all success!!!!!!!!!!!!!!")
         driver.quit()
