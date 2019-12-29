@@ -17,24 +17,43 @@ from bs4 import BeautifulSoup
 from oauth2client.service_account import ServiceAccountCredentials
 from utils import custom_logger, paste_csv_to_wks
 
+# CURRENT_DIR = '/home/ubuntu/instascraper'
+CURRENT_DIR = '.'
+# BIN_DIR = '/usr/bin'
+BIN_DIR = '.'
+PAUSE_TIME = 3
+
 chrome_options = Options()
-chrome_options.add_argument("--headless")
+# chrome_options.add_argument("--headless")
 chrome_options.add_argument('--no-sandbox')
 chrome_options.add_argument('--disable-dev-shm-usage')
 
-driver = webdriver.Chrome(executable_path='/usr/bin/chromedriver', options=chrome_options)
+current_time = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+
+logfile = f"{CURRENT_DIR}/log/insta_{current_time}.log"
+logger = custom_logger(logfile)
+
+logger.info(f"Logfile name {logfile}")
+
+driver_path = f'{BIN_DIR}/chromedriver'
+driver = webdriver.Chrome(executable_path=driver_path, options=chrome_options)
+
+logger.info("Loading page...")
 
 driver.get("https://www.instagram.com/candycrushsaga/")
 
-pause_time = 3
+logger.info("Page loaded!")
+
+logger.info("Scrolling through the page...")
+
 while True:
     last_height = driver.execute_script("return document.body.scrollHeight/8;")
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight/8);")
-    time.sleep(pause_time)
+    time.sleep(PAUSE_TIME)
     new_height = driver.execute_script("return document.body.scrollHeight/8;")
     if new_height == last_height:
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight/8);")
-        time.sleep(pause_time)
+        time.sleep(PAUSE_TIME)
         new_height = driver.execute_script("return document.body.scrollHeight/8;")
         if new_height == last_height:
             break
@@ -42,44 +61,42 @@ while True:
             last_height = new_height
             continue
 
-time.sleep(pause_time)
+logger.info("Done scrolling through the page...")
+
 elements = driver.find_elements_by_xpath("//div[@class='v1Nh3 kIKUG  _bz0w']")
 elements[0].click()
+time.sleep(PAUSE_TIME)
 
-csv_path = "./csv/insta_" + str(datetime.now()) + ".csv"
+csv_path = f"{CURRENT_DIR}/csv/insta_{current_time}.csv"
 fp = open(csv_path, "w")
 wr = csv.writer(fp, dialect='excel')
 wr.writerow(['from_user', 'text', 'time', 'likes', 'hashtag'])
 
-logger = custom_logger("./log/insta_" + str(datetime.now()))
+logger.info(f"Clicking through posts and writing comments data to {csv_path}...")
 
 while True:
-    time.sleep(pause_time)
+    time.sleep(PAUSE_TIME)
     try:
+
         next_btn = driver.find_element_by_xpath("//a[@class='HBoOv coreSpriteRightPaginationArrow']")
-        time.sleep(pause_time)
         comment_blocks = driver.find_elements_by_xpath("//ul[@class='Mr508']")
 
         for comment in comment_blocks:
             line = []
             from_user = comment.find_element_by_xpath("./div/li/div/div/div[2]/h3/a").text
-            # print("from_user: ", from_user)
             line.append(from_user)
 
             text = comment.find_element_by_xpath("./div/li/div/div/div[2]/span").text
             text = BeautifulSoup(text, "lxml").text
             cleaner = re.compile('<.*?>')
             cleaned_text = re.sub(cleaner, '', text)
-            # print("text: ", cleaned_text)
             line.append(cleaned_text)
 
             time_element = comment.find_element_by_xpath("./div/li/div/div/div[2]/div/div/time").get_attribute('datetime')
-            # print("time: ", time_element)
             line.append(time_element)
 
             likes = comment.find_element_by_xpath("./div/li/div/div/div[2]/div/div/button[1]").text
             if 'Reply' not in likes:
-                # print("likes: ", likes)
                 line.append(likes)
             else:
                 line.append('')
@@ -89,32 +106,31 @@ while True:
             for hash_tag in hash_tags_content:
                 if "#" in hash_tag.text:
                     hash_tags_element = hash_tags_element + hash_tag.text + " "
-            # print("hashtags: ", hash_tags_element)
             line.append(hash_tags_element)
 
             wr = csv.writer(fp, dialect='excel')
             wr.writerow(line)
 
-        time.sleep(pause_time)
         next_btn.click()
+
     except NoSuchElementException:
+
+        logger.info(f"Clicking through posts and writing comments data to {csv_path} file complete!")
+
         fp.close()
 
         content = open(csv_path, 'r', encoding='utf-8').read()
 
+        logger.info('Write csv content to "Scraping task instagram" googlesheet')
+
         scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-        credentials = ServiceAccountCredentials.from_json_keyfile_name('./instagramscraper.json', scope)
+        credentials = ServiceAccountCredentials.from_json_keyfile_name('{CURRENT_DIR}/instagramscraper.json', scope)
 
         gc = gspread.authorize(credentials)
         wks = gc.open("Scraping task instagram")
         paste_csv_to_wks(csv_path, wks, 'A2')
 
-        # sleep_period = 3600
-        #
-        # logger.info("Script sleeping for an hour")
-        # time.sleep(sleep_period)
-        # logger.info("Sleep period ended")
+        logger.info("Writing complete!")
 
-        print("all success!!!!!!!!!!!!!!")
         driver.quit()
         break
