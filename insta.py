@@ -24,13 +24,11 @@ BIN_DIR = '.'
 PAUSE_TIME = 3
 
 chrome_options = Options()
-# chrome_options.add_argument("--headless")
-chrome_options.add_argument('--no-sandbox')
-chrome_options.add_argument('--disable-dev-shm-usage')
+chrome_options.add_argument("--headless")
 
 current_time = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 
-logfile = f"{CURRENT_DIR}/log/insta_{current_time}.log"
+logfile = f"{CURRENT_DIR}/logs/insta_{current_time}.log"
 logger = custom_logger(logfile)
 
 logger.info(f"Logfile name {logfile}")
