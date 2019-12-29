@@ -1,6 +1,21 @@
 # Instagram Scraper
 
-* Make virtual environment for Python(use virtualenv command)
-* pip install -r requirements.txt
-* Download geckodriver for Windows/Linux(https://github.com/mozilla/geckodriver/releases)
-* Run insta.py script
+### Requirements
+
+- **Python 3.8.0**
+- **Chromedriver**
+- **Google-Chrome**
+
+**NB:** The chromedriver and google-chrome should be the same or compatible
+versions
+
+### How to run the script
+
+- Navigate to the scripts directory
+- Run the following comand sequencially (on Mac).
+```
+$ python3 -m venv env
+$ source env/bin/activate
+$ pip install -r requirements.txt
+$ python3 insta.py
+```
