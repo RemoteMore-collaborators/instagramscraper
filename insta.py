@@ -122,7 +122,7 @@ while True:
         logger.info('Write csv content to "Scraping task instagram" googlesheet')
 
         scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-        credentials = ServiceAccountCredentials.from_json_keyfile_name('{CURRENT_DIR}/instagramscraper.json', scope)
+        credentials = ServiceAccountCredentials.from_json_keyfile_name(f'{CURRENT_DIR}/instagramscraper.json', scope)
 
         gc = gspread.authorize(credentials)
         wks = gc.open("Scraping task instagram")
