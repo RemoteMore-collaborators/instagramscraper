@@ -3,5 +3,9 @@
 __pycache__/
 instagramscraper.json
 env
-logs
-csv
+logs/*
+csv/*
+*.json
+*.log
+*.csv
+
