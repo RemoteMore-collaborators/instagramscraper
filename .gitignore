@@ -4,8 +4,9 @@ __pycache__/
 instagramscraper.json
 env
 logs/*
-csv/*
+!logs/logs
 *.json
-*.log
 *.csv
+chromedriver
 
+.DS_Store

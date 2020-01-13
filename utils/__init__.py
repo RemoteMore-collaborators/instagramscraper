@@ -1,11 +1,15 @@
 import logging
 import sys
 import gspread
+from enchant.checker import SpellChecker
 
 
 def custom_logger(logger_name, level=logging.DEBUG):
     """
     Method to return a custom logger with the given name and level
+    :param logger_name:
+    :param level:
+    :return: logger
     """
     logger = logging.getLogger(logger_name)
     logger.setLevel(level)
@@ -25,7 +29,21 @@ def custom_logger(logger_name, level=logging.DEBUG):
     return logger
 
 
-def paste_csv_to_wks(csv_file, sheet, cell):
+def paste_csv_to_wks(csv_file, sheet, cell, logger):
+    """
+    Write the contents of the csv_file to a google sheet
+    :param csv_file:
+    :param sheet:
+    :param cell:
+    :param logger:
+    :return:
+    """
+    clean_wks = sheet.get_worksheet(0)
+    total_rows = len(clean_wks.col_values(1))
+    logger.info(f"Total number of rows on the worksheet: {total_rows}")
+
+    clean_wks.resize(rows=3)
+
     if '!' in cell:
         (tabName, cell) = cell.split('!')
         wks = sheet.worksheet(tabName)
@@ -35,18 +53,19 @@ def paste_csv_to_wks(csv_file, sheet, cell):
 
     with open(csv_file, 'r', encoding='utf-8') as f:
         csv_contents = f.read()
-    body = {
-        'requests': [{
-            'pasteData': {
-                "coordinate": {
-                    "sheetId": wks.id,
-                    "rowIndex": firstRow - 1,
-                    "columnIndex": firstColumn - 1,
-                },
-                "data": csv_contents,
-                "type": 'PASTE_NORMAL',
-                "delimiter": ',',
-            }
-        }]
-    }
+    body = {'requests': [{
+        'pasteData': {"coordinate": {"sheetId": wks.id, "rowIndex": firstRow - 1, "columnIndex": firstColumn - 1, },
+                      "data": csv_contents, "type": 'PASTE_NORMAL', "delimiter": ',', }}]}
     return sheet.batch_update(body)
+
+
+def is_in_english(quote):
+    """
+    Check if a sentence is in english
+    :param quote:
+    :return: Boolean
+    """
+    d = SpellChecker("en_US")
+    d.set_text(quote)
+    errors = [err.word for err in d]
+    return False if ((len(errors) > 5) or len(quote.split()) < 1) else True
