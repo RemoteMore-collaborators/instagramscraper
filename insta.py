@@ -30,6 +30,7 @@ logger.info(f"Logfile name {logfile}")
 
 driver_path = f'{BIN_DIR}/chromedriver'
 driver = webdriver.Chrome(executable_path=driver_path, options=chrome_options)
+driver.set_script_timeout(300)
 
 logger.info("Loading page...")
 
@@ -115,13 +116,13 @@ while True:
         try:
             video_views_ = driver.find_element_by_class_name("vcOH2")
             likes = video_views_.text
-        except:
+        except NoSuchElementException:
             pass
 
         try:
             photo_likes_ = driver.find_element_by_class_name("Nm9Fw")
             likes = photo_likes_.text
-        except:
+        except NoSuchElementException:
             pass
 
         fileWriter.writerow([post_author, post_content, date_time, likes, link])
@@ -134,9 +135,6 @@ while True:
             while attempts < 2:
                 try:
                     comment_text = comment.find_element_by_xpath("./div/li/div/div/div[2]/span").text
-                    # text = BeautifulSoup(text, "lxml").text
-                    # cleaner = re.compile('<.*?>')
-                    # comment_text = re.sub(cleaner, '', text)
 
                     if not is_in_english(comment_text):
                         break
@@ -160,6 +158,12 @@ while True:
                         if "#" in hash_tag.text:
                             hash_tags_element = hash_tags_element + hash_tag.text + " "
 
+                    try:
+                        replies_ = comment.find_element_by_class_name("EizgU").text
+                        replies = int(re.findall(r'\b\d+\b', replies_)[0])
+                    except NoSuchElementException:
+                        replies = 0
+
                     logger.info(f"Parsing comment {comment_n}")
                     comment_n += 1
 
@@ -169,7 +173,7 @@ while True:
                     comment = driver.find_elements_by_xpath(f"//ul[@class='Mr508'][position()={comment_n}]")[0]
                     attempts += 1
 
-            line = [from_user, comment_text, date_time_obj, likes, hash_tags_element]
+            line = [from_user, comment_text, date_time_obj, likes, replies, hash_tags_element]
             fileWriter.writerow(line)
 
         fileWriter.writerow(['', '', '', '', ''])
